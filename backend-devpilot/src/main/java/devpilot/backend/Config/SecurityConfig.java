@@ -2,7 +2,7 @@ package devpilot.backend.Config;
 
 import devpilot.backend.Security.GithubOAuth2UserService;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,12 +19,11 @@ import org.springframework.security.web.authentication.*;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private GithubOAuth2UserService githubOAuth2UserService;
-    private AuthenticationSuccessHandler oauth2SuccessHandler;
-    private AuthenticationFailureHandler oauth2FailureHandler;
+    private final GithubOAuth2UserService githubOAuth2UserService;
+
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http,AuthenticationSuccessHandler oauth2SuccessHandler,AuthenticationFailureHandler oauth2FailureHandler) throws Exception {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
@@ -44,8 +43,9 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(githubOAuth2UserService)
-                            .successHandler(oauth2SuccessHandler)
-                        .failureHandler(oauth2FailureHandler))
+                        )
+                        .successHandler(oauth2SuccessHandler)
+                        .failureHandler(oauth2FailureHandler)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
@@ -54,18 +54,18 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("DEVPILOT_SESSION"));
-        )
+
         return http.build();
     }
 
     @Bean
-    AuthenticationSuccessHandler oauth2SucessHandler(@Value("${app.frontend-value}") String frontendUrl) {
+    AuthenticationSuccessHandler oauth2SucessHandler(@Value("${app.frontend-url}") String frontendUrl) {
         SimpleUrlAuthenticationSuccessHandler handler = new  SimpleUrlAuthenticationSuccessHandler();
         handler.setDefaultTargetUrl(frontendUrl+"/auth/callback");
         return handler;
     }
     @Bean
-    AuthenticationFailureHandler oauth2FailureHandler(@Value("${app.frontend-value}") String frontendUrl) {
+    AuthenticationFailureHandler oauth2FailureHandler(@Value("${app.frontend-url}") String frontendUrl) {
         SimpleUrlAuthenticationFailureHandler handler = new  SimpleUrlAuthenticationFailureHandler();
         handler.setDefaultFailureUrl(frontendUrl+"/login?error=oauth_failed");
         return handler;

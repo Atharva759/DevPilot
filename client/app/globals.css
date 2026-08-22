@@ -2,6 +2,24 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@theme {
+  --font-sans: var(--font-roboto);
+  --font-poppins: var(--font-poppins);
+}
+
+body {
+  font-family: var(--font-roboto), sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-poppins), sans-serif;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

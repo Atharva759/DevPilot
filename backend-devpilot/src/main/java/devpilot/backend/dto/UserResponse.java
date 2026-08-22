@@ -3,10 +3,10 @@ package devpilot.backend.dto;
 import java.util.UUID;
 
 public record UserResponse
-        (Long id,
-    String githubId,
-    String githubUsername,
-    String displayName,
-    String avatarUrl ){
+        (UUID id,
+         Long githubId,
+         String githubUsername,
+         String displayName,
+         String avatarUrl ){
 
 }
