@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class IndexingService {
-    private static final int VECTOR_BATCH_SIZE = 32;
+    private static final int VECTOR_BATCH_SIZE = 1;
     private static final int PROGRESS_EVERY_N_FILES = 5;
 
     private final RepoRepository repositoryRepository;
