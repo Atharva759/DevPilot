@@ -33,7 +33,7 @@ public class NvidiaEmbeddingModel implements EmbeddingModel {
             @Value("${nvidia.api-key}") String apiKey) {
 
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
+                .connectTimeout(Duration.ofSeconds(120))
                 .build();
 
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
@@ -43,7 +43,6 @@ public class NvidiaEmbeddingModel implements EmbeddingModel {
         this.restClient = RestClient.builder()
                 .baseUrl("https://integrate.api.nvidia.com/v1")
 
-                // IMPORTANT: actually use the timeout factory
                 .requestFactory(requestFactory)
 
                 .defaultHeader(

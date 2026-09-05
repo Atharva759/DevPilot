@@ -41,6 +41,9 @@ public class ChatStreamHandler {
         StringBuilder fullReply = new StringBuilder();
 
         try {
+            log.info("Starting chat stream for session: {}", sessionId);
+            log.info("Chat model implementation: {}", chatModel.getClass().getName());
+
             emitter.send(SseEmitter.event()
                     .name("user_message")
                     .data(savedUserMessage));
@@ -52,15 +55,45 @@ public class ChatStreamHandler {
                     .user(userPrompt)
                     .stream()
                     .content()
-                    .doOnNext(token -> appendToken(emitter, fullReply, token))
+                    .doOnNext(token -> {
+                        log.debug("Received token: {}", token);
+                        appendToken(emitter, fullReply, token);
+                    })
                     .doOnError(err -> {
-                        log.error("Chat stream error", err);
+                        log.error(
+                                "========== CHAT STREAM ERROR ==========",
+                                err
+                        );
+
+                        try {
+                            emitter.send(
+                                    SseEmitter.event()
+                                            .name("error")
+                                            .data("AI generation failed: " + err.getMessage())
+                            );
+                        } catch (Exception sendEx) {
+                            log.error("Could not send SSE error event", sendEx);
+                        }
+
                         emitter.completeWithError(err);
                     })
-                    .doOnComplete(() -> completeStream(
-                            emitter, sessionId, fullReply, citations))
+                    .doOnComplete(() -> {
+                        log.info(
+                                "Chat stream completed. Response length={}",
+                                fullReply.length()
+                        );
+
+                        completeStream(
+                                emitter,
+                                sessionId,
+                                fullReply,
+                                citations
+                        );
+                    })
                     .subscribe();
+
         } catch (Exception ex) {
+            log.error("Failed to initialize chat stream", ex);
             emitter.completeWithError(ex);
         }
 
