@@ -23,18 +23,20 @@ export function ChatMessages({
   repo,
   messages,
   streamText,
+  isStreaming,
   isLoading,
 }: {
   repo: Repository;
   messages: ChatMessage[];
   streamText?: string;
+  isStreaming?: boolean;
   isLoading?: boolean;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamText]);
+  }, [messages, streamText, isStreaming]);
 
   if (isLoading) {
     return (
@@ -106,6 +108,28 @@ export function ChatMessages({
               </Message>
             );
           })}
+
+          {isStreaming && !streamText && (
+            <Message align="start">
+              <MessageAvatar>
+                <Avatar className="size-8">
+                  <AvatarFallback className="bg-muted">
+                    <Bot className="size-4" />
+                  </AvatarFallback>
+                </Avatar>
+              </MessageAvatar>
+              <MessageContent>
+                <Bubble variant="muted" align="start">
+                  <BubbleContent className="flex items-center gap-1.5 px-4 py-3">
+                    <span className="text-sm text-muted-foreground mr-1">Thinking</span>
+                    <span className="inline-block size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
+                    <span className="inline-block size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
+                    <span className="inline-block size-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
+                  </BubbleContent>
+                </Bubble>
+              </MessageContent>
+            </Message>
+          )}
 
           {streamText && (
             <Message align="start">

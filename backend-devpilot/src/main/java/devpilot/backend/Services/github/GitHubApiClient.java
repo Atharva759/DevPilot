@@ -14,13 +14,16 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class GitHubApiClient {
 
     private static final String API_BASE = "https://api.github.com";
     private static final ParameterizedTypeReference<List<Map<String, Object>>> LIST_MAP = new ParameterizedTypeReference<>() {};
     private static final  ParameterizedTypeReference<Map<String, Object>> MAP = new ParameterizedTypeReference<>() {};
     private final RestClient.Builder restClientBuilder;
+
+    public GitHubApiClient(RestClient.Builder restClientBuilder) {
+        this.restClientBuilder = restClientBuilder;
+    }
 
     public List<Map<String, Object>> listUserRepos(String accessToken) {
         List<Map<String, Object>> all = new ArrayList<>();
@@ -77,6 +80,20 @@ public class GitHubApiClient {
             return new String(Base64.getDecoder().decode(raw), StandardCharsets.UTF_8);
         }
         return String.valueOf(content);
+    }
+
+    public String getPullRequestDiff(String accessToken, String owner, String repo, int prNumber) {
+        return restClientBuilder
+                .baseUrl(API_BASE)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3.diff")
+                .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
+                .defaultHeader(HttpHeaders.USER_AGENT, "DevPilot")
+                .build()
+                .get()
+                .uri("/repos/{owner}/{repo}/pulls/{prNumber}", owner, repo, prNumber)
+                .retrieve()
+                .body(String.class);
     }
 
     private RestClient client(String accessToken){

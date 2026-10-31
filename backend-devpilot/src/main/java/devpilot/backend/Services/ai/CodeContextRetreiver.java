@@ -27,6 +27,7 @@ public class CodeContextRetreiver {
         var search = SearchRequest.builder()
                 .query(question)
                 .topK(RagSettings.TOP_K_CHUNKS)
+                .similarityThreshold(RagSettings.SIMILARITY_THRESHOLD)
                 .filterExpression(filter)
                 .build();
 
@@ -37,14 +38,26 @@ public class CodeContextRetreiver {
                 .distinct()
                 .toList();
 
-        var contextText = documents.stream()
-                .map(Document::getText)
-                .collect(Collectors.joining("\n\n---\n\n"));
-
-        if (contextText.isBlank()) {
-            contextText = NO_MATCHES;
+        // Build context text, capping at MAX_CONTEXT_CHARS to avoid slow LLM responses
+        var sb = new StringBuilder();
+        for (Document doc : documents) {
+            String text = doc.getText();
+            if (sb.length() + text.length() + 5 > RagSettings.MAX_CONTEXT_CHARS) {
+                // Add as much as we can fit
+                int remaining = RagSettings.MAX_CONTEXT_CHARS - sb.length() - 5;
+                if (remaining > 100) {
+                    if (sb.length() > 0) sb.append("\n\n---\n\n");
+                    sb.append(text, 0, remaining);
+                }
+                break;
+            }
+            if (sb.length() > 0) sb.append("\n\n---\n\n");
+            sb.append(text);
         }
+
+        String contextText = sb.length() > 0 ? sb.toString() : NO_MATCHES;
 
         return new RetrievedContext(citations, contextText);
     }
 }
+

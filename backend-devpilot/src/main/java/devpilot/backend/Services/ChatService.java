@@ -92,21 +92,21 @@ public class ChatService {
             throw new BadRequestException("Repository is not ready for chat");
         }
 
-        // 2. Persist the user's message
+        // 2. RAG retrieval — find code chunks similar to the question
+        var retrievedContext = codeContextRetriever.retrieve(repo.getId(), userContent);
+
+        // 3. Build LLM prompts from retrieved context + question
+        String systemPrompt = chatPromptBuilder.systemPrompt(repo.getFullName());
+        String userPrompt = chatPromptBuilder.userPrompt(retrievedContext.contextText(), userContent);
+
+        // Persist only after retrieval succeeds; failed embedding requests must not leave duplicate messages.
         ChatMessage userMessage = chatMessageRepository.save(ChatMessage.builder()
                 .sessionId(session.getId())
                 .role(MessageRole.USER)
                 .content(userContent)
                 .build());
 
-        // 3. RAG retrieval — find code chunks similar to the question
-        var retrievedContext = codeContextRetriever.retrieve(repo.getId(), userContent);
-
-        // 4. Build LLM prompts from retrieved context + question
-        String systemPrompt = chatPromptBuilder.systemPrompt(repo.getFullName());
-        String userPrompt = chatPromptBuilder.userPrompt(retrievedContext.contextText(), userContent);
-
-        // 5. Stream OpenAI response to the client (SSE)
+        // 4. Stream OpenAI response to the client (SSE)
         return chatStreamHandler.stream(
                 session.getId(),
                 toMessageResponse(userMessage),

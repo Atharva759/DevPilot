@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class IndexingService {
-    private static final int VECTOR_BATCH_SIZE = 1;
+    private static final int VECTOR_BATCH_SIZE = 32;
     private static final int PROGRESS_EVERY_N_FILES = 5;
 
     private final RepoRepository repositoryRepository;
@@ -91,18 +91,21 @@ public class IndexingService {
         int totalChunks = 0;
 
         for (String path : filePaths) {
+            List<Document> chunks = List.of();
             try {
                 String content = gitHubApiClient.getFileContent(
                         token, repo.getOwner(), repo.getName(), path);
-                List<Document> chunks = codeChunker.chunkFile(repoId.toString(), path, content);
-                batch.addAll(chunks);
-                totalChunks += chunks.size();
-                if (batch.size() >= VECTOR_BATCH_SIZE) {
-                    vectorStore.add(batch);
-                    batch.clear();
-                }
+                chunks = codeChunker.chunkFile(repoId.toString(), path, content);
             } catch (Exception ex) {
                 log.warn("Skipping file {} in {}: {}", path, repo.getFullName(), ex.getMessage());
+            }
+
+            batch.addAll(chunks);
+            totalChunks += chunks.size();
+            while (batch.size() >= VECTOR_BATCH_SIZE) {
+                List<Document> toIndex = new ArrayList<>(batch.subList(0, VECTOR_BATCH_SIZE));
+                batch.subList(0, VECTOR_BATCH_SIZE).clear();
+                vectorStore.add(toIndex);
             }
 
             processed++;
@@ -113,7 +116,9 @@ public class IndexingService {
         }
 
         if (!batch.isEmpty()) {
-            vectorStore.add(batch);
+            List<Document> toIndex = new ArrayList<>(batch);
+            batch.clear();
+            vectorStore.add(toIndex);
         }
 
         markReady(repoId, filePaths.size(), processed, totalChunks, repo.getFullName());

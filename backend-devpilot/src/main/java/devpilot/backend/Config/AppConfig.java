@@ -27,4 +27,9 @@ public class AppConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean
+    public org.springframework.ai.chat.client.ChatClient chatClient(org.springframework.ai.chat.model.ChatModel chatModel) {
+        return org.springframework.ai.chat.client.ChatClient.builder(chatModel).build();
+    }
 }

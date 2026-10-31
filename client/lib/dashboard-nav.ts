@@ -1,4 +1,4 @@
-import {FolderGit2,LayoutGrid,Settings, type LucideIcon } from "lucide-react";
+import { Activity, FolderGit2, GitPullRequest, LayoutGrid, Settings, Terminal, type LucideIcon } from "lucide-react";
 
 
 export type DashboardNavItem = {
@@ -27,6 +27,21 @@ export const dashboardNavGroups: DashboardNavGroup[] = [
                 href: "/dashboard",
                 icon: FolderGit2,
                 exact: true,
+            },
+            {
+                title: "PR Review",
+                href: "/dashboard/review",
+                icon: GitPullRequest,
+            },
+            {
+                title: "Log Analyzer",
+                href: "/dashboard/logs",
+                icon: Terminal,
+            },
+            {
+                title: "Repo Health",
+                href: "/dashboard/health",
+                icon: Activity,
             },
         ],
     },

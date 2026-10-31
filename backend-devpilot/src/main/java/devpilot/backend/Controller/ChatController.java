@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import devpilot.backend.Security.CurrentUser;
 import devpilot.backend.Services.ChatService;
+import devpilot.backend.Services.ai.RagSettings;
 import devpilot.backend.dto.ChatMessageRequest;
 import devpilot.backend.dto.ChatMessageResponse;
 import devpilot.backend.dto.ChatSessionResponse;
@@ -23,10 +24,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
+@Slf4j
 public class ChatController {
 
     private final CurrentUser currentUser;
@@ -56,6 +59,23 @@ public class ChatController {
             @PathVariable UUID id,
             @Valid @RequestBody ChatMessageRequest request) {
         UUID userId = currentUser.require().getId();
-        return chatService.streamReply(userId, id, request.content());
+        try {
+            return chatService.streamReply(userId, id, request.content());
+        } catch (RuntimeException ex) {
+            log.error("Failed to prepare chat stream", ex);
+            SseEmitter emitter = new SseEmitter(RagSettings.STREAM_TIMEOUT_MS);
+            try {
+                String detail = ex.getMessage();
+                emitter.send(SseEmitter.event()
+                        .name("error")
+                        .data("Could not prepare chat response"
+                                + (detail == null || detail.isBlank() ? "" : ": " + detail)));
+            } catch (Exception sendEx) {
+                log.warn("Could not send chat preparation error event", sendEx);
+            } finally {
+                emitter.complete();
+            }
+            return emitter;
+        }
     }
 }

@@ -59,6 +59,45 @@ export type ChatMessage = {
   createdAt: string;
 };
 
+export type ReviewRequest = {
+  diff?: string;
+  prUrl?: string;
+  repoId?: string;
+};
+
+export type LogAnalysisRequest = {
+  logContent: string;
+};
+
+export type DocGap = {
+  filePath: string;
+  gapType: string;
+  description?: string;
+};
+
+export type QueriedModule = {
+  modulePath: string;
+  queryCount: number;
+};
+
+export type HealthInsight = {
+  category: "TESTING" | "CI" | "DEPENDENCIES" | "SECURITY" | "REPOSITORY";
+  severity: "HIGH" | "MEDIUM" | "LOW" | "INFO";
+  title: string;
+  description: string;
+  evidencePath: string | null;
+};
+
+export type RepoHealthResponse = {
+  repoId: string;
+  embeddingCoverage: number;
+  totalFiles: number;
+  indexedFiles: number;
+  chunkCount: number;
+  docGaps: DocGap[];
+  topQueriedModules: QueriedModule[];
+  insights: HealthInsight[];
+};
 
 export class ApiError extends Error {
   status: number;
@@ -135,4 +174,6 @@ export const api = {
     ),
   getMessages: (sessionId: string) =>
     apiFetch<ChatMessage[]>(`/api/chat/sessions/${sessionId}`),
+  getRepoHealth: (repoId: string) =>
+    apiFetch<RepoHealthResponse>(`/api/repos/${repoId}/health`),
 };

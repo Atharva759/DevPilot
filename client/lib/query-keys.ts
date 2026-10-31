@@ -16,4 +16,14 @@ export const queryKeys = {
         messages: (sessionId: string) => 
             [...queryKeys.chat.all, "messages", sessionId] as const,
     },
+    review: {
+        all: ["review"] as const,
+    },
+    logs: {
+        all: ["logs"] as const,
+    },
+    health: {
+        all: ["health"] as const,
+        repo: (repoId: string) => [...queryKeys.health.all, "repo", repoId] as const,
+    },
 };

@@ -41,8 +41,21 @@ export function ChatView({ repoId }: { repoId: string }) {
   const sessionId =
     selectedSessionId ?? sessionsQuery.data?.[0]?.id ?? null;
 
-  const messagesQuery = useChatMessages(sessionId);
-  const { send, stop, streaming, streamText } = useStreamChat(sessionId);
+  const {
+    send,
+    stop,
+    streaming,
+    awaitingReply,
+    finishWaitingForReply,
+    streamText,
+  } = useStreamChat(sessionId);
+  const messagesQuery = useChatMessages(sessionId, streaming, awaitingReply);
+
+  useEffect(() => {
+    if (awaitingReply && messagesQuery.data?.at(-1)?.role === "ASSISTANT") {
+      finishWaitingForReply();
+    }
+  }, [awaitingReply, finishWaitingForReply, messagesQuery.data]);
 
   useEffect(() => {
     if (!ready || sessionsQuery.isLoading) return;
@@ -135,6 +148,7 @@ export function ChatView({ repoId }: { repoId: string }) {
                 repo={repo}
                 messages={messagesQuery.data ?? []}
                 streamText={streamText}
+                isStreaming={streaming}
                 isLoading={messagesQuery.isLoading}
               />
               <ChatComposer
