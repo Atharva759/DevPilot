@@ -4,7 +4,19 @@ WORKDIR /workspace
 COPY pom.xml pom.xml
 COPY src src
 
-RUN mvn -B -f pom.xml -DskipTests package
+RUN log=/tmp/maven-build.log; \
+    for attempt in 1 2 3; do \
+      mvn -B -Dmaven.wagon.http.retryHandler.count=3 -f pom.xml -DskipTests package > "$log" 2>&1; \
+      status=$?; \
+      cat "$log"; \
+      if [ "$status" -eq 0 ]; then exit 0; fi; \
+      if ! grep -Eiq 'status code: 429|too many requests' "$log" || [ "$attempt" -eq 3 ]; then \
+        exit "$status"; \
+      fi; \
+      delay=$((attempt * 20)); \
+      echo "Maven Central returned HTTP 429; retrying in ${delay}s (attempt $((attempt + 1))/3)."; \
+      sleep "$delay"; \
+    done
 
 FROM eclipse-temurin:21-jre
 
